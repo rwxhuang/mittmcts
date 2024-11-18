@@ -4,7 +4,7 @@ from test.games import PhantomTicTacToe
 
 def main():
     result = (MCTS(PhantomTicTacToe)
-              .get_simulation_result(1, get_leaf_nodes=True))
+              .get_simulation_result(20000, get_leaf_nodes=True))
     flamegraph(result)
 
 
