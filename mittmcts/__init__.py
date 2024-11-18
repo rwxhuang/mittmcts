@@ -226,7 +226,7 @@ def flamegraph(mcts_result, depth=None):
             else:
                 move = node.move
             if node.parent.current_player != current_player:
-                extra = '-opp'
+                extra = ''
             if node.winner == Draw:
                 moves.insert(0, '{}-draw'.format(current_player))
             elif node.winner == current_player:
@@ -238,5 +238,19 @@ def flamegraph(mcts_result, depth=None):
         if depth is not None:
             moves = moves[:depth]
         walks[';'.join(moves)] += 1
-    for path, count in walks.iteritems():
-        print('{} {}'.format(path, count))
+    for path, count in walks.items():
+        print('{} {}'.format(info_sets(path), count))
+
+def info_sets(path):
+    turns, result = path.split(';')[:-1], path.split(';')[-1]
+    p0_infoset = ''
+    placed_squares = set()
+    p1_infoset = ''
+    for i in range(len(turns)):
+        if i % 2 == 0:
+            p0_infoset += (turns[i] + ('*' if turns[i] not in placed_squares else '.'))
+        else:
+            p1_infoset += (turns[i] + ('*' if turns[i] not in placed_squares else '.'))
+        placed_squares.add(turns[i])
+
+    return f'P0: {p0_infoset}, P1: {p1_infoset}, Result: {result}'

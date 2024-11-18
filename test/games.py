@@ -1,7 +1,7 @@
 from collections import namedtuple
-from copy import copy
+from copy import copy, deepcopy
 
-from six.moves import filter
+# from six.moves import filter
 
 from mittmcts import Draw
 
@@ -223,3 +223,64 @@ class GameWithManyMovesOnlyOneDetermined(GameWithTwoMoves):
         # we'll say only moving into the 2rd space is legal for this
         # determination
         return state._replace(board=[1, 0, 1, 1, 1])
+
+class PhantomTicTacToe(object):
+
+    State = namedtuple('PhantomTicTacToe', ['board', 'current_player', 'attempts', 'winner'])
+    winning_scores = [7, 56, 448, 73, 146, 292, 273, 84]
+
+    @classmethod
+    def initial_state(cls):
+        return cls.State(board=[None] * 9,
+                         current_player='X',
+                         attempts={'X': set(), 'O': set()},
+                         winner=None)
+
+    @classmethod
+    def apply_move(cls, state, move):
+        new_board = copy(state.board)
+        # print(move, new_board, state.attempts, state.current_player)
+        if move not in range(9) or state.board[move] == state.current_player:
+            raise ValueError('Illegal move')
+        new_attempts = deepcopy(state.attempts)
+        new_attempts[state.current_player].add(move)
+        if not new_board[move]:
+            new_board[move] = state.current_player
+        next_player = state.current_player == 'X' and 'O' or 'X'
+        winner = None
+        for player in ['X', 'O']:
+            score = sum([2 ** i for i, spot in enumerate(new_board)
+                        if spot == player])
+            for winning_score in cls.winning_scores:
+                if winning_score & score == winning_score:
+                    winner = player
+        if winner is None and len(list(filter(None, new_board))) == 9:
+            winner = Draw
+        return cls.State(board=new_board,
+                         current_player=next_player,
+                         attempts=new_attempts,
+                         winner=winner)
+        
+
+    @staticmethod
+    def get_moves(state):
+        if state.winner:
+            return (False, [])
+        return (False, [i for i, spot in enumerate(state.board)
+                        if i not in state.attempts[state.current_player]])
+
+    @staticmethod
+    def get_winner(state):
+        return state.winner
+
+    @staticmethod
+    def current_player(state):
+        return state.current_player
+    
+    @staticmethod
+    def print_board(state):
+        print(''.join([((x and str(x) or str(i)) +
+                       ((i + 1) % 3 == 0 and '\n' or ' '))
+                       for i, x in enumerate(state.board)]))
+        print(state.attempts)
+

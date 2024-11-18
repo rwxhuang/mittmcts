@@ -4,7 +4,7 @@ from test.games import TicTacToeGame
 
 def main():
     result = (MCTS(TicTacToeGame)
-              .get_simulation_result(1000, get_leaf_nodes=True))
+              .get_simulation_result(10000, get_leaf_nodes=True))
     flamegraph(result)
 
 
