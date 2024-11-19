@@ -16,7 +16,7 @@ Draw = Draw()
 
 
 class Node(object):
-    def __init__(self, game, state, parent, move, c, depth=0):
+    def __init__(self, game, state, parent, move, c, depth=0, moves=''):
         self.parent = parent
         self.__state = state
         if parent is None:
@@ -31,6 +31,7 @@ class Node(object):
         self.impossible_state = False
         self.c = c
         self.depth = depth
+        self.moves=moves
 
     def ucb1(self, player):
         if not self.parent:
@@ -53,6 +54,9 @@ class Node(object):
         if not self.__state:
             self.__state = self.game.apply_move(self.parent.state, self.move)
         return self.__state
+    
+    def get_children(self):
+        return self.__children
 
     def determine(self):
         # if games implement a determine classmethod then we are
@@ -67,7 +71,8 @@ class Node(object):
                                            move=move,
                                            parent=self,
                                            c=self.c,
-                                           depth=self.depth + 1)
+                                           depth=self.depth + 1,
+                                           moves=self.moves+str(move))
                                 for move in moves
                                 if move not in self.__children})
 
@@ -144,13 +149,13 @@ class Node(object):
     def reset_state(self):
         self.__state = None
 
-    def __repr__(self):
-        return 'state=%r move=%r visits=%r wins=%r ucb=%r' % (
-            self.state,
-            self.move,
-            self.visits,
-            self.wins_by_player[self.parent.current_player],
-            self.ucb1(self.parent.current_player))
+    # def __repr__(self):
+    #     return 'state=%r move=%r visits=%r wins=%r ucb=%r' % (
+    #         self.state,
+    #         self.move,
+    #         self.visits,
+    #         self.wins_by_player[self.parent.current_player],
+    #         self.ucb1(self.parent.current_player))
 
 
 class MCTS(object):
@@ -184,13 +189,16 @@ class MCTS(object):
         leaf_nodes = []
         determined = hasattr(self.game, 'determine')
         start_time = time()
+        visited_nodes = set()
         while plays < iterations:
             if max_seconds is not None and time() - start_time > max_seconds:
                 break
             root_node.determine()
             current_node = root_node
+            visited_nodes.add(current_node)
             while current_node.winner is None and current_node.children:
                 current_node = current_node.get_best_child()
+                visited_nodes.add(current_node)
                 if determined:
                     current_node.reset_state()
             if current_node.winner is None:
@@ -205,7 +213,7 @@ class MCTS(object):
                     leaf_nodes.append(current_node)
 
         move = root_node.most_visited_child(actual_options).move
-        return MCTSResult(root=root_node,
+        return visited_nodes, MCTSResult(root=root_node,
                           move=move,
                           leaf_nodes=leaf_nodes,
                           avg_depth=float(total_depth) / plays,
